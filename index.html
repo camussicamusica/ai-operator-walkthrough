@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Operator · Sofia Camussi</title>
+<style>
+  :root { --ink:#1b1b1b; --soft:#606060; --line:#dedede; --bg:#fff; --tint:#f5f4f1; --red:#c8372d; --green:#1f8a70; --orange:#e0662b; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); overflow:hidden;
+    font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif; }
+  .slide { position:absolute; inset:0 0 54px 0; padding:4.5vh 6vw 2vh; display:none; flex-direction:column; }
+  .slide.on { display:flex; }
+  .label { font-size:clamp(11px,1vw,14px); letter-spacing:.09em; text-transform:uppercase; color:var(--soft); }
+  h1 { font-size:clamp(26px,3.3vw,50px); line-height:1.12; margin:.5vh 0 2.4vh; font-weight:650; letter-spacing:-.01em; }
+  h1 .n { display:inline-block; min-width:1.25em; }
+  .k { color:var(--ink); } .r { color:var(--red); } .g { color:var(--green); } .o { color:var(--orange); }
+  .body { flex:1; min-height:0; display:flex; gap:4vw; align-items:stretch; }
+  .col { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+  p, li { font-size:clamp(15px,1.55vw,23px); line-height:1.45; margin:0 0 1.2vh; }
+  .big { font-size:clamp(19px,2.1vw,31px); line-height:1.35; }
+  .soft { color:var(--soft); }
+  .card { background:var(--tint); border-radius:10px; padding:2.4vh 2vw; }
+  .card h3 { margin:0 0 1vh; font-size:clamp(13px,1.15vw,17px); letter-spacing:.06em; text-transform:uppercase; color:var(--soft); font-weight:600; }
+  .tag { font-size:clamp(11px,.95vw,14px); color:var(--soft); border:1px solid var(--line); border-radius:99px; padding:2px 10px; display:inline-block; }
+  pre.tree { font-family:ui-monospace,Menlo,monospace; font-size:clamp(13px,1.35vw,20px); line-height:1.6; margin:0; white-space:pre; }
+  pre.tree em { font-style:normal; color:var(--soft); font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif; }
+  svg.dia { width:100%; flex:1; min-height:0; }
+  .key { display:flex; gap:28px; font-size:clamp(12px,1.1vw,16px); color:var(--soft); margin-top:1vh; }
+  .key i { display:inline-block; width:24px; border-top:3px solid; vertical-align:middle; margin-right:6px; }
+  /* opinion vs pattern */
+  .ovp { display:flex; gap:4vw; align-items:flex-end; }
+  .dots { display:grid; gap:9px; }
+  .dots b { width:clamp(14px,1.5vw,22px); aspect-ratio:1; border-radius:50%; background:#cfcfcf; display:block; }
+  .dots b.h { background:var(--ink); }
+  .cap { font-size:clamp(14px,1.4vw,21px); margin-top:1.4vh; }
+  /* frame */
+  .frame { flex:1; min-height:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--tint); position:relative; }
+  .frame iframe { width:100%; height:100%; border:0; display:block; background:#fff; }
+  .open { margin-top:1.2vh; font-size:clamp(13px,1.1vw,16px); }
+  a { color:var(--ink); }
+  /* pipeline */
+  .pipe { display:flex; align-items:center; gap:.8vw; flex-wrap:nowrap; margin:1vh 0 3vh; }
+  .st { border:1.5px solid var(--ink); border-radius:8px; padding:1.5vh 1.2vw; font-size:clamp(14px,1.45vw,22px); white-space:nowrap; }
+  .ck { background:var(--ink); color:#fff; border-radius:8px; padding:1.5vh 1.1vw; font-size:clamp(13px,1.25vw,19px); white-space:nowrap; font-weight:600; }
+  .arw { color:var(--soft); font-size:clamp(16px,1.6vw,24px); }
+  .review { display:flex; gap:2vw; align-items:center; }
+  .thumb { width:13vw; aspect-ratio:9/16; max-height:30vh; border-radius:8px; background:linear-gradient(160deg,#2b2b2b,#555); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2.4vw; }
+  .btns { display:flex; gap:10px; margin:1vh 0 1.4vh; }
+  .btns button { font:inherit; font-size:clamp(14px,1.4vw,20px); padding:.9vh 1.6vw; border-radius:8px; border:1.5px solid var(--ink); background:#fff; cursor:pointer; }
+  .btns button.yes.sel { background:var(--green); border-color:var(--green); color:#fff; }
+  .btns button.no.sel { background:var(--red); border-color:var(--red); color:#fff; }
+  .note { width:100%; font:inherit; font-size:clamp(13px,1.25vw,18px); padding:1vh 1vw; border:1px solid var(--line); border-radius:8px; resize:none; height:9vh; }
+  /* table */
+  table { border-collapse:collapse; width:100%; font-size:clamp(14px,1.5vw,22px); }
+  th, td { text-align:left; padding:1.5vh 1.2vw; border-bottom:1px solid var(--line); }
+  th { font-size:clamp(12px,1.1vw,16px); letter-spacing:.05em; text-transform:uppercase; color:var(--soft); font-weight:600; vertical-align:bottom; }
+  th small { display:block; text-transform:none; letter-spacing:0; font-weight:400; }
+  td.num { font-variant-numeric:tabular-nums; font-weight:600; }
+  /* stages */
+  .two { display:flex; align-items:stretch; gap:2vw; }
+  .two .card { flex:1; }
+  .two .mid { align-self:center; font-size:2.4vw; color:var(--soft); }
+  .ladder { display:flex; flex-direction:column; gap:1.6vh; }
+  .rung { display:flex; align-items:center; gap:1.4vw; border-left:6px solid var(--orange); background:var(--tint); border-radius:0 10px 10px 0; padding:2vh 1.6vw; }
+  .rung b { font-size:clamp(20px,2.2vw,34px); color:var(--orange); min-width:1.2em; }
+  .rung:nth-child(1) { margin-right:16%; } .rung:nth-child(2) { margin-right:8%; }
+  /* hub */
+  .hub { display:grid; grid-template-columns:repeat(3,1fr); gap:1.6vh 1.4vw; flex:1; min-height:0; }
+  .hub > div { border:1.5px solid var(--line); border-radius:10px; padding:1.6vh 1.2vw; display:flex; flex-direction:column; justify-content:center; }
+  .hub b { font-size:clamp(15px,1.55vw,23px); }
+  .hub span { font-size:clamp(12px,1.15vw,17px); color:var(--soft); }
+  .hub .c { background:var(--ink); border-color:var(--ink); color:#fff; align-items:center; text-align:center; }
+  .hub .c span { color:#cfcfcf; }
+  .q { font-size:clamp(24px,3vw,46px); line-height:1.2; font-weight:650; border-left:6px solid var(--ink); padding-left:1.6vw; margin-top:3vh; }
+  /* nav */
+  nav { position:absolute; left:0; right:0; bottom:0; height:54px; display:flex; align-items:center; gap:14px; padding:0 6vw; border-top:1px solid var(--line); background:#fff; }
+  nav button { font:inherit; font-size:15px; padding:7px 16px; border-radius:8px; border:1.5px solid var(--ink); background:#fff; cursor:pointer; }
+  nav button.next { background:var(--ink); color:#fff; }
+  nav .pips { display:flex; gap:7px; flex:1; justify-content:center; }
+  nav .pips i { width:9px; height:9px; border-radius:50%; background:var(--line); cursor:pointer; }
+  nav .pips i.on { background:var(--ink); }
+  nav .where { font-size:13px; color:var(--soft); min-width:150px; }
+  nav .cue { font-size:13px; color:#b5b5b5; min-width:60px; text-align:right; }
+
+  .tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:-1.2vh 0 2vh; }
+  .tools em { font-style:normal; font-size:clamp(11px,1vw,14px); letter-spacing:.09em; text-transform:uppercase; color:var(--soft); margin-right:4px; }
+  .chip { display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--ink); border-radius:99px; padding:5px 14px 5px 6px; font-size:clamp(14px,1.35vw,20px); font-weight:600; background:#fff; }
+  .chip i { width:1.5em; height:1.5em; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-style:normal; font-size:.78em; font-weight:700; }
+
+  .flow { flex:1; min-height:0; display:flex; align-items:stretch; gap:1vw; }
+  .fc { flex:1; display:flex; flex-direction:column; gap:1.4vh; }
+  .fc h3 { margin:0 0 .4vh; font-size:clamp(12px,1.1vw,16px); letter-spacing:.06em; text-transform:uppercase; color:var(--soft); font-weight:600; }
+  .ft { border:1.5px solid var(--line); border-radius:10px; padding:1.6vh 1.1vw; display:flex; flex-direction:column; }
+  .ft b { font-size:clamp(15px,1.55vw,23px); } .ft span { font-size:clamp(12px,1.15vw,17px); color:var(--soft); }
+  .ft.dark { background:var(--ink); border-color:var(--ink); color:#fff; } .ft.dark span { color:#cfcfcf; }
+  .fa { align-self:center; font-size:2.2vw; color:var(--soft); }
+
+  .chip img { width:1.5em; height:1.5em; border-radius:6px; object-fit:contain; background:#fff; }
+  .ft b { display:flex; align-items:center; gap:.5em; }
+  .ft b img { width:1.5em; height:1.5em; border-radius:6px; object-fit:contain; background:#fff; padding:1px; }
+</style>
+</head>
+<body>
+
+<!-- 0 -->
+<section class="slide on" data-name="The diagram" data-cue="0:00">
+  <div class="label">Sample assignment · AI Operator · Sofia Camussi</div>
+  <h1>Your diagram, with what I'd build under it</h1>
+  <svg class="dia" viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <pattern id="plus" width="26" height="22" patternUnits="userSpaceOnUse"><path d="M9 11h8M13 7v8" stroke="#c8372d" stroke-width="1.3" opacity="0.55"/></pattern>
+      <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <path d="M90 300V270H130V240H170V210H210V180H330V210H370V240H410V270H450V300Z" fill="url(#plus)" stroke="#c8372d" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M250 293C340 289 400 242 470 192C520 156 570 128 648 112" fill="none" stroke="#1f8a70" stroke-width="3" stroke-linecap="round" marker-end="url(#ar)"/>
+    <path d="M620 297C780 291 880 222 916 58" fill="none" stroke="#e0662b" stroke-width="3" stroke-linecap="round" marker-end="url(#ar)"/>
+    <line x1="40" y1="300" x2="962" y2="300" stroke="#1b1b1b" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="40" y="128" font-size="15" fill="#1b1b1b">Find / learn</text><text x="40" y="147" font-size="15" fill="#1b1b1b">problem</text>
+    <path d="M70 158C72 200 80 232 96 258" fill="none" stroke="#1b1b1b" stroke-width="1.4" marker-end="url(#ar)"/>
+    <text x="270" y="168" font-size="15" fill="#c8372d" text-anchor="middle">Solve w/ service</text>
+    <text x="590" y="62" font-size="15" fill="#1f8a70" text-anchor="middle">Build product</text><text x="590" y="81" font-size="15" fill="#1f8a70" text-anchor="middle">that does service</text>
+    <text x="712" y="36" font-size="15" fill="#e0662b">Self-serve</text><text x="712" y="55" font-size="15" fill="#e0662b">SaaS + agents</text>
+    <text x="270" y="324" font-size="13.5" fill="#c8372d" text-anchor="middle" font-weight="600">Services revenue</text>
+    <text x="560" y="324" font-size="13.5" fill="#1f8a70" text-anchor="middle" font-weight="600">Productized service</text>
+    <text x="850" y="324" font-size="13.5" fill="#e0662b" text-anchor="middle" font-weight="600">Product</text>
+    <line x1="470" y1="124" x2="470" y2="300" stroke="#1b1b1b" stroke-width="1.6" stroke-dasharray="6 5"/>
+    <line x1="690" y1="150" x2="690" y2="300" stroke="#1b1b1b" stroke-width="1.2" stroke-dasharray="3 5" opacity="0.6"/>
+    <text x="698" y="166" font-size="12" fill="#606060">keeps measuring</text>
+    <rect x="40" y="346" width="920" height="36" rx="4" fill="#1b1b1b"/>
+    <circle cx="62" cy="364" r="11" fill="#fff"/><text x="62" y="368.5" font-size="13" font-weight="650" fill="#1b1b1b" text-anchor="middle">1</text>
+    <text x="84" y="369" font-size="14" fill="#fff">Shared folder: each client's context + how we work. Everything above reads from it.</text>
+    <text x="40" y="420" font-size="14" fill="#606060">Audience building</text>
+    <line x1="172" y1="415" x2="560" y2="415" stroke="#606060" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="576" y="420" font-size="13" fill="#606060">yours and the Right Hand's, on the same pipeline</text>
+    <g font-size="13" font-weight="650" fill="#fff" text-anchor="middle">
+      <circle cx="62" cy="212" r="11" fill="#1b1b1b"/><text x="62" y="216.5">2</text>
+      <circle cx="270" cy="243" r="11" fill="#1b1b1b"/><text x="270" y="247.5">3</text>
+      <circle cx="470" cy="112" r="11" fill="#1b1b1b"/><text x="470" y="116.5">4</text>
+      <circle cx="560" cy="150" r="11" fill="#1b1b1b"/><text x="560" y="154.5">5</text>
+      <circle cx="868" cy="196" r="11" fill="#1b1b1b"/><text x="868" y="200.5">6</text>
+    </g>
+    <text x="488" y="116.5" font-size="12.5" fill="#1b1b1b" font-weight="600">Measure</text>
+  </svg>
+  <div class="key"><span><i style="border-color:#c8372d"></i><i style="border-color:#1f8a70"></i><i style="border-color:#e0662b"></i>Colour: your diagram</span><span><i style="border-color:#1b1b1b"></i>Black, numbered: what I'd build, in this order</span></div>
+</section>
+
+<!-- 1 -->
+<section class="slide" data-name="1 · Shared folder" data-tools="Google Drive|Claude" data-cue="0:45">
+  <div class="label">Step 1 · Foundation</div>
+  <h1><span class="n k">1</span>One shared folder the AI reads before any task</h1>
+  <div class="body">
+    <div class="col card">
+      <h3>Two parts <span class="tag">example</span></h3>
+<pre class="tree">agency-brain/
+├─ clients/
+│  ├─ dentist/      <em>← how she talks · what she sells</em>
+│  │                <em>  who she sells to · approved scripts</em>
+│  └─ gym/
+└─ how-we-work/
+   ├─ steps.md
+   ├─ rules.md      <em>← every correction lands here</em>
+   └─ recipes/</pre>
+    </div>
+    <div class="col">
+      <p class="big"><b>Why first:</b> everything else reads from it. Without it, the AI starts from zero every time.</p>
+      <div class="card" style="margin-top:2vh">
+        <h3>What this did for a client</h3>
+        <p>Lost financial documents · 3 inboxes · 70,000+ emails each</p>
+        <p>Context first: what his accountants needed, and why.</p>
+        <p style="margin:0"><b>Then the tool.</b> It found documents he thought were gone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- second brain video -->
+<section class="slide" data-name="1 · A client's Second Brain" data-tools="Google Drive|Claude" data-cue="1:10">
+  <div class="label">Step 1 · Built for a client</div>
+  <h1 style="margin-bottom:1.4vh">A Second Brain I built for a client: every dot is a note the AI can read</h1>
+  <div class="frame" style="background:#fff"><video src="second-brain-graph.mp4" controls muted loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;display:block;background:#fff"></video></div>
+  <div class="open">Each colour is a group of notes; each line is a link between two notes. Note names are hidden on purpose.</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-name="2 · Find the problem" data-tools="Otter|Firecrawl" data-cue="1:50">
+  <div class="label">Step 2 · Find / learn problem</div>
+  <h1><span class="n k">2</span>Find the problem: interview first, then the niche</h1>
+  <div class="body">
+    <div class="col">
+      <div class="ovp">
+        <div><div class="dots" style="grid-template-columns:repeat(1,auto)"><b class="h"></b></div><div class="cap"><b>The client interview</b><br><span class="soft">one opinion</span></div></div>
+        <div><div class="dots" id="many" style="grid-template-columns:repeat(10,auto)"></div><div class="cap"><b>Top videos and comments in the niche</b><br><span class="soft">a pattern</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <p class="big">Open questions first. No solutions yet.</p>
+      <p class="soft">Design thinking interview method · Stanford d.school workshop · used in about 20 interviews for my thesis.</p>
+      <p class="big" style="margin-top:2vh"><b>Why:</b> we sell the fix to a problem, not "videos".</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-name="2 · VIBE Station" data-cue="2:25">
+  <div class="label">Step 2 · A research tool I built</div>
+  <h1 style="margin-bottom:1.4vh">VIBE Station: saved Instagram posts, turned into a board</h1>
+  <div class="frame"><iframe data-src="https://camussicamusica.github.io/vibe-station/" title="VIBE Station" allow="autoplay"></iframe></div>
+  <div class="open">Runs in the browser; the data never leaves the computer. <a href="https://camussicamusica.github.io/vibe-station/" target="_blank" rel="noopener">Open in a new tab</a></div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-name="3 · Deliver" data-tools="Claude|ElevenLabs|Remotion|Airtable" data-cue="2:55">
+  <div class="label">Step 3 · Services revenue</div>
+  <h1><span class="n r">3</span>Deliver the service, with people at two checkpoints</h1>
+  <div class="pipe">
+    <span class="st">Idea</span><span class="arw">→</span>
+    <span class="st">Script</span><span class="arw">→</span>
+    <span class="ck">✓ a person approves</span><span class="arw">→</span>
+    <span class="st">Video</span><span class="arw">→</span>
+    <span class="ck">✓ the client approves</span><span class="arw">→</span>
+    <span class="st">Published</span>
+  </div>
+  <div class="body">
+    <div class="col card" style="flex:1.25">
+      <h3>The client's review page <span class="tag">example</span></h3>
+      <div class="review">
+        <div class="thumb">▶</div>
+        <div style="flex:1">
+          <p style="margin-bottom:.4vh"><b>Video 12 · "Three questions patients ask"</b></p>
+          <div class="btns"><button class="yes">Yes, publish</button><button class="no">No, change it</button></div>
+          <textarea class="note" placeholder="Notes, typed or by voice…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <p class="big">Fixing a script takes two minutes. Fixing a finished video takes hours.</p>
+      <p class="big"><b>Every "no" becomes a written rule.</b></p>
+      <p class="soft" style="margin-top:2vh">The real one I built for a video client: <a href="https://camussicamusica.github.io/videus/revisar/" target="_blank" rel="noopener">open the review page</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-name="4 · Measure" data-tools="Airtable" data-cue="3:50">
+  <div class="label">Step 4 · Does what we sell work?</div>
+  <h1><span class="n r">4</span>Measure: three numbers per video</h1>
+  <div class="body" style="flex-direction:column; gap:2.4vh">
+    <table>
+      <tr><th>Video <span class="tag">example data</span></th><th>On the platform<small>watched to the end</small></th><th>For the client<small>enquiries from its tracked link</small></th><th>For us<small>corrections needed</small></th></tr>
+      <tr><td>Three questions patients ask</td><td class="num">52%</td><td class="num">6</td><td class="num">0</td></tr>
+      <tr><td>A day at the clinic</td><td class="num">31%</td><td class="num">1</td><td class="num">3</td></tr>
+      <tr><td>What whitening really costs</td><td class="num">47%</td><td class="num">4</td><td class="num">1</td></tr>
+    </table>
+    <div style="display:flex; gap:4vw">
+      <p class="big" style="flex:1">I build the table and it fills itself. The Right Hand uses it to decide what to post.</p>
+      <p class="big" style="flex:1"><b>Why:</b> it tells us what is worth packaging, and later what is safe to automate.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-name="5 · Productize" data-tools="Claude skills" data-cue="4:45">
+  <div class="label">Step 5 · Productized service</div>
+  <h1><span class="n g">5</span>Productize, in two stages</h1>
+  <div class="body" style="flex-direction:column; gap:2.4vh; justify-content:center">
+    <div class="two">
+      <div class="card"><h3>Stage one · start with what we have</h3><p class="big" style="margin:0"><b>A fixed package.</b><br>A set number of videos per month.</p></div>
+      <div class="mid">→</div>
+      <div class="card" style="border-left:6px solid var(--green)"><h3>Stage two · a few clients in one niche <span class="tag">example</span></h3>
+        <p class="big" style="margin-bottom:.8vh"><b>A recipe for that niche.</b></p>
+        <p style="margin:0" class="soft">The interview questions · the video formats that worked · the rules · the AI instructions that run them</p></div>
+    </div>
+    <p class="big">You decide the offer and the price. I build what makes it repeatable.</p>
+    <p class="big"><b>Why:</b> each new client costs less to serve than the last one.</p>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-name="6 · Self-serve + agents" data-tools="Lovable|Claude on a schedule" data-cue="5:35">
+  <div class="label">Step 6 · Product</div>
+  <h1><span class="n o">6</span>Self-serve and agents, last</h1>
+  <div class="body">
+    <div class="col" style="flex:1.3">
+      <div class="ladder">
+        <div class="rung"><b>1</b><p style="margin:0"><b>A client portal.</b> They see their videos, approve them, check their numbers.</p></div>
+        <div class="rung"><b>2</b><p style="margin:0"><b>Agents for our own work.</b> Niche research, first drafts and the numbers report, on a schedule.</p></div>
+        <div class="rung"><b>3</b><p style="margin:0"><b>The full self-serve product.</b> Built from the pieces of the earlier steps.</p></div>
+      </div>
+    </div>
+    <div class="col">
+      <p class="big">Only for steps that already run with no corrections.</p>
+      <p class="big"><b>Why last:</b> automating a step that still needs fixing just produces mistakes faster.</p>
+      <p class="soft" style="margin-top:2vh">My own apps: <a href="https://camussicamusica.github.io/harmony-helper/" target="_blank" rel="noopener">a piano score-study app</a> · <a href="https://camussicamusica.github.io/Breathwork/" target="_blank" rel="noopener">a breathwork trainer</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- loops -->
+<section class="slide" data-name="Feedback loops" data-cue="4:10">
+  <div class="label">It never stops · Support is the loop</div>
+  <h1 style="margin-bottom:1vh">Every step feeds back into the ones before it</h1>
+  <svg class="dia" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs><marker id="la" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+    <line x1="186" y1="170" x2="227" y2="170" stroke="#1b1b1b" stroke-width="2" marker-end="url(#la)"/><line x1="381" y1="170" x2="422" y2="170" stroke="#1b1b1b" stroke-width="2" marker-end="url(#la)"/><line x1="576" y1="170" x2="617" y2="170" stroke="#1b1b1b" stroke-width="2" marker-end="url(#la)"/><line x1="771" y1="170" x2="812" y2="170" stroke="#1b1b1b" stroke-width="2" marker-end="url(#la)"/><polygon points="38,170 74,108 146,108 182,170 146,232 74,232" fill="#f5f4f1" stroke="#1b1b1b" stroke-width="2"/><text x="110" y="164" text-anchor="middle" font-size="18" font-weight="650" fill="#1b1b1b">Empathize</text><text x="110" y="187" text-anchor="middle" font-size="12.5" fill="#606060">Client interview</text><polygon points="233,170 269,108 341,108 377,170 341,232 269,232" fill="#f5f4f1" stroke="#1b1b1b" stroke-width="2"/><text x="305" y="164" text-anchor="middle" font-size="18" font-weight="650" fill="#1b1b1b">Define</text><text x="305" y="187" text-anchor="middle" font-size="12.5" fill="#606060">The problem, written</text><polygon points="428,170 464,108 536,108 572,170 536,232 464,232" fill="#f5f4f1" stroke="#1b1b1b" stroke-width="2"/><text x="500" y="164" text-anchor="middle" font-size="18" font-weight="650" fill="#1b1b1b">Ideate</text><text x="500" y="187" text-anchor="middle" font-size="12.5" fill="#606060">Scripts and recipes</text><polygon points="623,170 659,108 731,108 767,170 731,232 659,232" fill="#f5f4f1" stroke="#1b1b1b" stroke-width="2"/><text x="695" y="164" text-anchor="middle" font-size="18" font-weight="650" fill="#1b1b1b">Prototype</text><text x="695" y="187" text-anchor="middle" font-size="12.5" fill="#606060">Deliver the video</text><polygon points="818,170 854,108 926,108 962,170 926,232 854,232" fill="#f5f4f1" stroke="#1b1b1b" stroke-width="2"/><text x="890" y="164" text-anchor="middle" font-size="18" font-weight="650" fill="#1b1b1b">Test</text><text x="890" y="187" text-anchor="middle" font-size="12.5" fill="#606060">Measure</text>
+    <path d="M890 106C890 28 500 28 500 104" fill="none" stroke="#1f8a70" stroke-width="2.5" marker-end="url(#la)"/>
+    <text x="695" y="34" text-anchor="middle" font-size="14.5" font-weight="600" fill="#1f8a70">What worked becomes a rule</text>
+    <path d="M872 234C860 310 320 310 309 237" fill="none" stroke="#c8372d" stroke-width="2.5" marker-end="url(#la)"/>
+    <text x="590" y="313" text-anchor="middle" font-size="14.5" font-weight="600" fill="#c8372d">The numbers correct what we thought the problem was</text>
+    <path d="M908 234C900 400 100 400 93 237" fill="none" stroke="#e0662b" stroke-width="2.5" marker-end="url(#la)"/>
+    <text x="500" y="384" text-anchor="middle" font-size="14.5" font-weight="600" fill="#e0662b">Support: every automation gets checked again with the people who use it</text>
+  </svg>
+  <p class="big" style="margin:1vh 0 .6vh"><b>An automation is never finished.</b> It needs someone asking: is it still right, is it still used, is it still cheaper than doing it by hand?</p>
+  <p class="soft" style="margin:0">The five modes are the design thinking process from Stanford's d.school. The loops are where support lives.</p>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-name="Tools" data-cue="4:35">
+  <div class="label">Tools · How they fit together</div>
+  <h1>Information goes in, the folder keeps it, work comes out</h1>
+  <div class="flow">
+    <div class="fc"><h3>1 · Bring information in</h3>
+      <div class="ft"><b><img src="logos/otter.png" alt="">Otter</b><span>Records the client interviews</span></div>
+      <div class="ft"><b><img src="logos/firecrawl.png" alt="">Firecrawl</b><span>Collects videos and comments from a niche</span></div></div>
+    <div class="fa">→</div>
+    <div class="fc"><h3>2 · Keep it and think</h3>
+      <div class="ft dark"><b><img src="logos/google-drive.png" alt="">The shared folder</b><span>Google Drive + plain text files</span></div>
+      <div class="ft"><b><img src="logos/claude.png" alt="">Claude</b><span>Reads the folder, writes, follows the rules</span></div></div>
+    <div class="fa">→</div>
+    <div class="fc"><h3>3 · Make the work</h3>
+      <div class="ft"><b><img src="logos/elevenlabs.png" alt="">ElevenLabs</b><span>Voice</span></div>
+      <div class="ft"><b><img src="logos/remotion.png" alt="">Remotion</b><span>Video from a template</span></div>
+      <div class="ft"><b><img src="logos/lovable.png" alt="">Lovable</b><span>The client portal</span></div></div>
+    <div class="fa">→</div>
+    <div class="fc"><h3>4 · Track and sell</h3>
+      <div class="ft"><b><img src="logos/airtable.png" alt="">Airtable</b><span>The board and the numbers</span></div>
+      <div class="ft"><b><img src="logos/gohighlevel.png" alt="">GoHighLevel</b><span>Clients, funnels, messages</span></div></div>
+  </div>
+  <p class="big" style="margin:2.2vh 0 .6vh">↺ The results go back into the folder as rules.</p>
+  <p class="big" style="margin:0"><b>The tools can change. The folder stays.</b> <span class="soft">Checking every month what to swap is part of the job.</span></p>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-name="Close" data-cue="4:50">
+  <div class="label">Running underneath the whole time</div>
+  <h1>Audience building is a line, not a step</h1>
+  <div class="body" style="flex-direction:column; justify-content:center">
+    <p class="big">The content strategy is yours and the Right Hand's.</p>
+    <p class="big">My part: it runs on the same pipeline and the same numbers as client work.</p>
+    <div class="q">Which stage of the diagram is the agency in today?</div>
+    <p class="soft" style="margin-top:1.6vh">That changes what I'd build first.</p>
+  </div>
+</section>
+
+<nav>
+  <button class="prev" aria-label="Previous">←</button>
+  <span class="where"></span>
+  <span class="pips"></span>
+  <span class="cue"></span>
+  <button class="next" aria-label="Next">Next →</button>
+</nav>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide')), i=0;
+  var pips=document.querySelector('.pips'), where=document.querySelector('.where'), cue=document.querySelector('.cue');
+  slides.forEach(function(s,n){ var p=document.createElement('i'); p.title=s.dataset.name; p.onclick=function(){go(n)}; pips.appendChild(p); });
+
+  var LOGO={'Google Drive':'google-drive','Claude':'claude','Claude skills':'claude','Claude on a schedule':'claude','Otter':'otter','Firecrawl':'firecrawl','ElevenLabs':'elevenlabs','Remotion':'remotion','Airtable':'airtable','Lovable':'lovable','GoHighLevel':'gohighlevel'};
+  var COL={"Google Drive":"#1a73e8","Claude":"#c96442","Claude skills":"#c96442","Claude on a schedule":"#c96442","Otter":"#2f6fed","Firecrawl":"#e0662b","ElevenLabs":"#1b1b1b","Remotion":"#0b84f3","Airtable":"#f2a900","Lovable":"#d6336c"};
+  slides.forEach(function(sl){
+    if(!sl.dataset.tools) return;
+    var row=document.createElement('div'); row.className='tools';
+    var lab=document.createElement('em'); lab.textContent='Tools'; row.appendChild(lab);
+    sl.dataset.tools.split('|').forEach(function(t){
+      var c=document.createElement('span'); c.className='chip';
+      var d=document.createElement('img'); d.alt=''; d.src='logos/'+(LOGO[t]||'claude')+'.png';
+      c.appendChild(d); c.appendChild(document.createTextNode(t)); row.appendChild(c);
+    });
+    var h=sl.querySelector('h1'); h.parentNode.insertBefore(row,h.nextSibling);
+  });
+  var many=document.getElementById('many');
+  var hot=[12,13,14,22,23,24,25,33,34,35,43,44];
+  for(var d=0;d<60;d++){ var b=document.createElement('b'); if(hot.indexOf(d)>-1) b.className='h'; many.appendChild(b); }
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    [].forEach.call(pips.children,function(p,k){ p.classList.toggle('on',k===i); });
+    where.textContent=(i+1)+' / '+slides.length+' · '+slides[i].dataset.name;
+    cue.textContent=slides[i].dataset.cue||'';
+    var f=slides[i].querySelector('iframe[data-src]'); if(f&&!f.src) f.src=f.dataset.src;
+    [].forEach.call(document.querySelectorAll('video'),function(v){ if(!slides[i].contains(v)) v.pause(); });
+    try{ history.replaceState(null,'','#'+(i+1)); }catch(e){}
+  }
+  document.querySelector('.next').onclick=function(){go(i+1)};
+  document.querySelector('.prev').onclick=function(){go(i-1)};
+  document.addEventListener('keydown',function(e){
+    if(/^(TEXTAREA|INPUT)$/.test(e.target.tagName)) return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ e.preventDefault(); go(i+1); }
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); go(i-1); }
+  });
+  [].forEach.call(document.querySelectorAll('.btns button'),function(b){
+    b.onclick=function(){ [].forEach.call(b.parentNode.children,function(x){x.classList.remove('sel')}); b.classList.add('sel'); };
+  });
+  var h=parseInt((location.hash||'').slice(1),10); go(h>0?h-1:0);
+})();
+</script>
+</body>
+</html>
